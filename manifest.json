@@ -1,0 +1,19 @@
+{
+    "info": {
+        "dbversion": "20180316",
+        "magic": "wad-qc-factory"
+    },
+    "module": {
+        "description": "NM COR Siemens",
+        "executable": "wrapper.py",
+        "name": "NM_COR_Siemens",
+        "code": "python",
+        "dependencies": [
+            "numpy",
+            "pydicom",
+            "scipy",
+            "scikit-image",
+            "matplotlib"
+        ]
+    }
+}
