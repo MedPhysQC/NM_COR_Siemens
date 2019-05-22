@@ -34,6 +34,7 @@
          "params":{
             "Collimator IDs":{
                "ME":"@167",
+               "LEAP":"@199",
                "LEHR":"@188",
                "LME":"@178",
                "HE":"@304"
