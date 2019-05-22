@@ -1,1 +1,65 @@
-{"info": {"header_series": {"filters": {}, "params": {"Collimator IDs": "First characters of the collimator identifier (DICOM attribute (0018,1180): Collimator/grid Name)"}}, "acqdatetime": {"filters": {}, "params": {}}, "qc_series": {"filters": {}, "params": {}}}, "cfgformat": "20180910", "actions": {"header_series": {"filters": {}, "params": {"Collimator IDs": {"ME": "@167", "LEHR": "@188", "LME": "@178", "HE": "@304"}}}, "acqdatetime": {"filters": {}, "params": {}}, "qc_series": {"filters": {}, "params": {}}}, "comments": {"version": "20190426", "author": "Rob van Rooij, UMCU", "description": "Center of Rotation QC for Siemens Symbia and Intevo scanners (HAV/MHR)"}}
+{
+   "info":{
+      "header_series":{
+         "filters":{
+
+         },
+         "params":{
+            "Collimator IDs":"First characters of the collimator identifier (DICOM attribute (0018,1180): Collimator/grid Name)"
+         }
+      },
+      "acqdatetime":{
+         "filters":{
+
+         },
+         "params":{
+
+         }
+      },
+      "qc_series":{
+         "filters":{
+
+         },
+         "params":{
+
+         }
+      }
+   },
+   "cfgformat":"20180910",
+   "actions":{
+      "header_series":{
+         "filters":{
+
+         },
+         "params":{
+            "Collimator IDs":{
+               "ME":"@167",
+               "LEHR":"@188",
+               "LME":"@178",
+               "HE":"@304"
+            }
+         }
+      },
+      "acqdatetime":{
+         "filters":{
+
+         },
+         "params":{
+
+         }
+      },
+      "qc_series":{
+         "filters":{
+
+         },
+         "params":{
+
+         }
+      }
+   },
+   "comments":{
+      "version":"20190426",
+      "author":"Rob van Rooij, UMCU",
+      "description":"Center of Rotation QC for Siemens Symbia and Intevo scanners (HAV/MHR)"
+   }
+}
