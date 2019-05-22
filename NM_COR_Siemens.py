@@ -29,7 +29,7 @@ __version__ = '20190417'
 __author__ = 'rvrooij'
 
 
-def gaus(x,a,x0,sigma,bgr):
+def gauss(x,a,x0,sigma,bgr):
     return a * np.exp(-(x - x0)**2 /(2*sigma**2)) + bgr
 
 
@@ -46,24 +46,32 @@ def guess_width_pix(data):
 
 
 def fit_sources(data, pixsize, testing=False):
+    # data(theta,y,x)
+    # sum proj data first over x then theta 
     peak_signal = data.sum(axis=2).sum(axis=0)
+    # find approximate y coordinates for all point sources 
     peaks = peak_local_max(peak_signal, min_distance=10, threshold_abs=peak_signal.max()/2)
+    # average distance between sources in y direction divided by 2 
     dist = int(np.diff(sorted(peaks[:,0])).mean()/2)
 
     if testing:
         fig, ax = plt.subplots(1,len(peaks))
 
+    # popt = optimal parameters
     SA_poptsX = []
     SA_poptsY = []
     for i, peak in enumerate(peaks[:,0]):
         SA_poptsX.append([])
         SA_poptsY.append([])
         
+        # projection cropped in y direction around each pointsource (peak +/- dist) 
+        # cropped[theta,y,x] 
         cropped = data[:, peak-dist:peak+dist]
                         
         X_cropped = cropped.sum(axis=1)
         Y_cropped = cropped.sum(axis=2)
             
+        # new coordinates. (0,0) is the exact center of the image (boundary of 4 pixels)
         X_coords = -(np.arange(cropped.shape[2]) - cropped.shape[2]/2 + 0.5) * pixsize
         Y_coords = (np.arange(cropped.shape[1]) - cropped.shape[1]/2 + 0.5) * pixsize
         
@@ -71,14 +79,18 @@ def fit_sources(data, pixsize, testing=False):
             ax[i].imshow(Y_cropped)
             ax[i].set_title("S%i"%i)
         
+        # j=view, crop=1D profile in x-direction 
         for j, crop in enumerate(X_cropped):
             width = guess_width_pix(crop) * pixsize
-            popt, pcov = scipy.optimize.curve_fit(gaus, X_coords, crop, p0=[crop.max(),X_coords[np.argmax(crop)],width,0])
+            # fit 1D profile with gaussian
+            # popt = [a, x0, sigma, bgr]
+            popt, pcov = scipy.optimize.curve_fit(gauss, X_coords, crop, p0=[crop.max(),X_coords[np.argmax(crop)],width,0])
             SA_poptsX[-1].append(popt)
                     
+        # j=view, crop=1D profile in y-direction
         for j, crop in enumerate(Y_cropped):
             width = guess_width_pix(crop) * pixsize
-            popt, pcov = scipy.optimize.curve_fit(gaus, Y_coords, crop, p0=[crop.max(),0,width,0])
+            popt, pcov = scipy.optimize.curve_fit(gauss, Y_coords, crop, p0=[crop.max(),0,width,0])
             SA_poptsY[-1].append(popt)
 
     if testing:
@@ -199,18 +211,19 @@ def analyze(ds, testing=False):
 
 
 def header(ds, params):
-    col_ids = params["Collimator IDs"]
-
+    col_ids = params.get("Collimator IDs")
     results = []
-    for i, det in enumerate(ds.DetectorInformationSequence):
-        cid = det.CollimatorGridName
-        
-        for label, col_id in col_ids.items():
-            if cid.startswith(col_id):
-                cid = label
-                break
     
-        results.append(("D%i_CollimatorGridName"%(i+1), cid))
+    if(col_ids):
+        for i, det in enumerate(ds.DetectorInformationSequence):
+            cid = det.CollimatorGridName
+            
+            for label, col_id in col_ids.items():
+                if cid.startswith(col_id):
+                    cid = label
+                    break
+        
+            results.append(("D%i_CollimatorGridName"%(i+1), cid))
 
     return {'string': results}
     
@@ -237,7 +250,7 @@ if __name__ == "__main__":
     for key, value in results.get('float', []):
         print(key, value)
     print()
-    results = header(ds)
+    results = header(ds,{})
     for key, value in results.get('string', []):
         print(key, value)
         
