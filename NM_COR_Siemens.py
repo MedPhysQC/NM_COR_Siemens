@@ -40,7 +40,7 @@ def cos360(x,a,p,b):
 def guess_width_pix(data):
     thr = np.where(data > data.max()/2)[0]
     try:
-        return (thr[-1] - thr[0]) / 2.355
+        return max(1.0, (thr[-1] - thr[0]) / 2.355)
     except IndexError:
         return 1.0
 
@@ -50,7 +50,7 @@ def fit_sources(data, pixsize, testing=False):
     # sum proj data first over x then theta 
     peak_signal = data.sum(axis=2).sum(axis=0)
     # find approximate y coordinates for all point sources 
-    peaks = peak_local_max(peak_signal, min_distance=10, threshold_abs=peak_signal.max()/2)
+    peaks = peak_local_max(peak_signal, min_distance=5, threshold_abs=peak_signal.max()/2)
     # average distance between sources in y direction divided by 2 
     dist = int(np.diff(sorted(peaks[:,0])).mean()/2)
 
@@ -80,18 +80,22 @@ def fit_sources(data, pixsize, testing=False):
             ax[i].set_title("S%i"%i)
         
         # j=view, crop=1D profile in x-direction 
+        p0 = [X_cropped[0].max(), X_coords[np.argmax(X_cropped[0])], guess_width_pix(X_cropped[0]) * pixsize, 0]
         for j, crop in enumerate(X_cropped):
             width = guess_width_pix(crop) * pixsize
             # fit 1D profile with gaussian
             # popt = [a, x0, sigma, bgr]
-            popt, pcov = scipy.optimize.curve_fit(gauss, X_coords, crop, p0=[crop.max(),X_coords[np.argmax(crop)],width,0])
+            popt, pcov = scipy.optimize.curve_fit(gauss, X_coords, crop, p0=p0)
             SA_poptsX[-1].append(popt)
+            p0 = popt #Use previous fitresult as starting parameters
                     
         # j=view, crop=1D profile in y-direction
+        
+        p0 = [Y_cropped[0].max(), 0, guess_width_pix(Y_cropped[0]) * pixsize, 0]
         for j, crop in enumerate(Y_cropped):
-            width = guess_width_pix(crop) * pixsize
-            popt, pcov = scipy.optimize.curve_fit(gauss, Y_coords, crop, p0=[crop.max(),0,width,0])
+            popt, pcov = scipy.optimize.curve_fit(gauss, Y_coords, crop, p0=p0)
             SA_poptsY[-1].append(popt)
+            p0 = popt
 
     if testing:
         plt.show()
@@ -239,14 +243,11 @@ if __name__ == "__main__":
         import dicom
     import matplotlib.pyplot as plt
         
-    #dicom_path = "Head Alignment Calibration QC Study/NM Head Alignment Verification LEHR/NM000000.dcm"
-    #dicom_path = "Head Alignment Calibration QC Study/NM Head Alignment Calibration 180 LEHR/NM000000.dcm"
-    dicom_path = "MHR COR 180 Calibration 3 Points Study/NM HEGP/NM000000.dcm"
-    #dicom_path = "430dcd75-8f57-4e39-b587-aa431c12c756.dcm"
+    dicom_path = "../LEHR/data.dcm"
     
     ds = dicom.read_file(dicom_path)
     
-    results = analyze(ds, testing=False)
+    results = analyze(ds, testing=True)
     for key, value in results.get('float', []):
         print(key, value)
     print()
