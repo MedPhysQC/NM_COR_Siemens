@@ -166,8 +166,18 @@ def get_system_resolution(ds, DA_angles, DSA_Xpos, DSA_widths, testing=False):
     D_sys_res = []
     for det_idx, A_angles in enumerate(DA_angles):
         rotation_radius = float(ds.RotationInformationSequence[0].RadialPosition[0])
-        collimator_thickness = ds[0x0055,0x107e].value
-        crystal_thickness = ds[0x0033,0x1029].value
+        try:
+            collimator_thickness = ds[0x0055,0x107e].value
+        except KeyError:
+            # DICOM tag for collimator thickness not stored...
+            collimator_thickness = [24., 24.] # Assuming a LEHR collimator
+        
+        try:
+            crystal_thickness = ds[0x0033,0x1029].value
+        except KeyError:
+            # DICOM tag for crystal thickness not stored...
+            crystal_thickness = [9.525, 9.525] # Assuming 9.525mm
+        
         dist20cm = 200 + collimator_thickness[det_idx] + crystal_thickness[det_idx]
 
         S_sys_res = []
@@ -244,6 +254,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
         
     dicom_path = "../LEHR/data.dcm"
+    dicom_path = "../LEHR/lehr90cal.dcm"
     
     ds = dicom.read_file(dicom_path)
     
