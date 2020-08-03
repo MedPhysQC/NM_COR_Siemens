@@ -134,7 +134,7 @@ def analyze_pointsources(ds, testing=False):
 
         SA_poptsX, SA_poptsY = fit_sources(data, pixsize, testing)
         
-        SA_widths = np.sqrt( SA_poptsX[...,2] * SA_poptsY[...,2] ) * 2*np.sqrt(2*np.log(2))
+        SA_widths = np.sqrt( np.abs(SA_poptsX[...,2] * SA_poptsY[...,2]) ) * 2*np.sqrt(2*np.log(2))
         
         DSA_Xpos.append( SA_poptsX[...,1] )
         DSA_Ypos.append( SA_poptsY[...,1] )
@@ -157,6 +157,7 @@ def analyze_pointsources(ds, testing=False):
         for det_idx in range(nDet):
             for src_idx, A_widths in enumerate(DSA_widths[det_idx]): 
                 plt.plot(DA_angles[det_idx], A_widths, color=cycle[src_idx], linestyle=['-','--',':'][det_idx], label="D%i,S%i"%(det_idx, src_idx))
+
         plt.title("widths"); plt.legend(); plt.show()
     
     return np.array(DA_angles), np.array(DSA_Xpos), np.array(DSA_Ypos), np.array(DSA_widths)
@@ -254,7 +255,7 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
         
     dicom_path = "../LEHR/data.dcm"
-    dicom_path = "../LEHR/lehr90cal.dcm"
+    dicom_path = "../module_error.dcm"
     
     ds = dicom.read_file(dicom_path)
     
