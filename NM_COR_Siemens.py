@@ -29,8 +29,8 @@ __version__ = '20190417'
 __author__ = 'rvrooij'
 
 
-def gauss(x,a,x0,sigma,bgr):
-    return a * np.exp(-(x - x0)**2 /(2*sigma**2)) + bgr
+def gauss(x,a,x0,sigma):
+    return a * np.exp(-(x - x0)**2 /(2*sigma**2))
 
 
 def cos360(x,a,p,b):
@@ -55,7 +55,7 @@ def fit_sources(data, pixsize, testing=False):
     dist = int(np.diff(sorted(peaks[:,0])).mean()/2)
 
     if testing:
-        fig, ax = plt.subplots(1,len(peaks))
+        fig, ax = plt.subplots(2,len(peaks))
 
     # popt = optimal parameters
     SA_poptsX = []
@@ -76,22 +76,25 @@ def fit_sources(data, pixsize, testing=False):
         Y_coords = (np.arange(cropped.shape[1]) - cropped.shape[1]/2 + 0.5) * pixsize
         
         if testing:
-            ax[i].imshow(Y_cropped)
-            ax[i].set_title("S%i"%i)
+            # Show the data which is to be fitted
+            ax[0,i].imshow(X_cropped)
+            ax[0,i].set_title("S%i"%i)
+            ax[1,i].imshow(Y_cropped)
+            ax[1,i].set_title("S%i"%i)
         
-        # j=view, crop=1D profile in x-direction 
-        p0 = [X_cropped[0].max(), X_coords[np.argmax(X_cropped[0])], guess_width_pix(X_cropped[0]) * pixsize, 0]
+        # j=view, crop=1D profile in x-direction
+        bounds = ((0, X_coords.min(), 1.), (2*X_cropped.max(), X_coords.max(), 50.))
+        p0 = [X_cropped[0].max(), X_coords[np.argmax(X_cropped[0])], guess_width_pix(X_cropped[0]) * pixsize]
         for j, crop in enumerate(X_cropped):
             width = guess_width_pix(crop) * pixsize
             # fit 1D profile with gaussian
             # popt = [a, x0, sigma, bgr]
-            popt, pcov = scipy.optimize.curve_fit(gauss, X_coords, crop, p0=p0)
+            popt, pcov = scipy.optimize.curve_fit(gauss, X_coords, crop, bounds=bounds, p0=p0)
             SA_poptsX[-1].append(popt)
-            p0 = popt #Use previous fitresult as starting parameters
-                    
-        # j=view, crop=1D profile in y-direction
-        
-        p0 = [Y_cropped[0].max(), 0, guess_width_pix(Y_cropped[0]) * pixsize, 0]
+            p0 = popt #Use previous fitresult as starting parameter
+                  
+        # j=view, crop=1D profile in y-direction        
+        p0 = [Y_cropped[0].max(), 0, guess_width_pix(Y_cropped[0]) * pixsize]
         for j, crop in enumerate(Y_cropped):
             popt, pcov = scipy.optimize.curve_fit(gauss, Y_coords, crop, p0=p0)
             SA_poptsY[-1].append(popt)
@@ -189,11 +192,26 @@ def get_system_resolution(ds, DA_angles, DSA_Xpos, DSA_widths, testing=False):
                 b_guess = A_widths.mean()
                 a_guess = 0.5 * A_widths.ptp()
                 p_guess = A_angles[A_widths.argmax()]
-                                
-                popt, pcov = scipy.optimize.curve_fit(cos360, A_angles, A_widths, p0=[a_guess,p_guess,b_guess])
-
+                
+                a = np.copy(A_angles); w = np.copy(A_widths)                
+                while True:
+                    # If there is a residual larger than 25% of the fitted 
+                    # amplitude, remove it and fit again.                    
+                    popt, pcov = scipy.optimize.curve_fit(cos360, a, w, p0=[a_guess,p_guess,b_guess])
+                    residuals = np.abs(w - cos360(a, *popt))                       
+                    
+                    if not sum(residuals > 0.25 * popt[0]):
+                        break
+                    
+                    remove_idx = residuals.argmax()
+                    a = np.delete(a, remove_idx); w = np.delete(w, remove_idx)
+                
                 if testing:
-                    plt.plot(A_angles, A_widths); plt.plot(A_angles, cos360(A_angles, *popt)); plt.show()
+                    plt.plot(a, w, 'bo')
+                    plt.plot(A_angles, A_widths, 'bo', alpha=0.3)                    
+                    plt.plot(A_angles, cos360(A_angles, *popt), 'k-')
+                    plt.show()
+                    
 
                 Wmin, Wmax = popt[2]-abs(popt[0]), popt[2]+abs(popt[0])
                 slope = (Wmax - Wmin) / (2*source_offset)
@@ -254,8 +272,9 @@ if __name__ == "__main__":
         import dicom
     import matplotlib.pyplot as plt
         
-    dicom_path = "../LEHR/data.dcm"
-    dicom_path = "../module_error.dcm"
+    dicom_path = "../NM_COR_DATA/LEHR/data.dcm"
+    #dicom_path = "../NM_COR_DATA/module_error.dcm"
+    #dicom_path = "../NM_COR_DATA/1f9162c8-cd5f-4307-bad1-7f8e6b1999f4.dcm"
     
     ds = dicom.read_file(dicom_path)
     
