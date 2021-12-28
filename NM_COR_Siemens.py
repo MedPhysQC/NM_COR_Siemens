@@ -136,7 +136,11 @@ def analyze_pointsources(ds, testing=False):
         angles = angles[sorting]
 
         SA_poptsX, SA_poptsY = fit_sources(data, pixsize, testing)
-        
+        #   correction negative values aren't valid ? ############################################
+        for j in range(len(SA_poptsX[...,2])):
+            SA_poptsX[...,2][j][np.where(SA_poptsX[...,2][j]<=0)]=0
+            SA_poptsY[...,2][j][np.where(SA_poptsY[...,2][j]<=0)]=0 
+            
         SA_widths = np.sqrt( np.abs(SA_poptsX[...,2] * SA_poptsY[...,2]) ) * 2*np.sqrt(2*np.log(2))
         
         DSA_Xpos.append( SA_poptsX[...,1] )
